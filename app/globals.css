@@ -1,0 +1,160 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --apple-blue: #0071E3;
+  --apple-blue-dark: #0058B0;
+  --apple-blue-light: #E8F2FF;
+  --apple-dark: #1D1D1F;
+  --apple-secondary: #6E6E73;
+  --apple-divider: #D2D2D7;
+  --apple-bg: #F5F5F7;
+  --apple-white: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'system-ui',
+    'Helvetica Neue', sans-serif;
+  background-color: #FFFFFF;
+  color: #1D1D1F;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Shimmer skeleton animation */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Drop zone animation */
+.dropzone-active {
+  border-color: var(--apple-blue) !important;
+  background: var(--apple-blue-light) !important;
+  transform: scale(1.01);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Fade in animation classes */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card hover */
+.info-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+}
+
+/* Button pulse on ready state */
+@keyframes buttonPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(0,113,227,0.20); }
+  50% { box-shadow: 0 4px 30px rgba(0,113,227,0.40); }
+}
+.btn-pulse {
+  animation: buttonPulse 2s ease-in-out infinite;
+}
+
+/* Progress bar */
+@keyframes progressBar {
+  0% { width: 0%; }
+  30% { width: 45%; }
+  60% { width: 70%; }
+  80% { width: 85%; }
+  95% { width: 92%; }
+}
+.progress-bar-anim {
+  animation: progressBar 5s cubic-bezier(0.1, 0.5, 0.5, 1) forwards;
+}
+
+/* AdFit container */
+.adfit-container {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F8F8F8;
+  border-radius: 12px;
+  border: 1px dashed #D2D2D7;
+  overflow: hidden;
+}
+
+/* Dot loading animation */
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+}
+.dot-1 { animation: dotBounce 1.2s infinite 0s; }
+.dot-2 { animation: dotBounce 1.2s infinite 0.2s; }
+.dot-3 { animation: dotBounce 1.2s infinite 0.4s; }
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #0071E3, #00C2FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
