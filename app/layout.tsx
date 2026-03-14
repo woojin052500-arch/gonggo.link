@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   verification: {
     google: 'OTtCWeK17flWhWN4NBH9anMbcWcCxA_KBaNqQi-Ry9c',
   },
+  other: {
+    'naver-site-verification': 'c89dfc7f5f2b72562a6aa99311beee758015f0aa',
+  },
   openGraph: {
     title: 'Gonggo.link — 스마트 공고 분석기',
     description: 'AI로 공고문 핵심만 쏙 뽑아드립니다',
