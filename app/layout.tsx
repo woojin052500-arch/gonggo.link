@@ -6,14 +6,15 @@ export const metadata: Metadata = {
   description:
     'PDF/HWP 공고문을 업로드하면 AI가 즉시 핵심 정보를 추출하고 엑셀로 저장해 드립니다. 서버에 저장되지 않아 안전합니다.',
   keywords: ['공고 분석', '공고문 요약', 'AI 공고', '보조금 공고', '지원사업 분석'],
+  verification: {
+    google: 'OTtCWeK17flWhWN4NBH9anMbcWcCxA_KBaNqQi-Ry9c',
+  },
   openGraph: {
     title: 'Gonggo.link — 스마트 공고 분석기',
     description: 'AI로 공고문 핵심만 쏙 뽑아드립니다',
     type: 'website',
     url: 'https://gonggo.link',
   },
-  themeColor: '#FFFFFF',
-  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({
