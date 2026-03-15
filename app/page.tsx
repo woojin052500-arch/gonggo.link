@@ -43,7 +43,6 @@ function AdFitSlot({
   useEffect(() => {
     if (!containerRef.current || !unit || unit.startsWith('DAN-SLOT')) return;
 
-    // 기존 ins 제거 후 재생성 (상태 변경 시 중복 방지)
     containerRef.current.innerHTML = '';
 
     const ins = document.createElement('ins');
@@ -54,7 +53,6 @@ function AdFitSlot({
     ins.setAttribute('data-ad-height', String(height));
     containerRef.current.appendChild(ins);
 
-    // SDK가 로드된 후 수동으로 해당 슬롯만 init
     const tryInit = () => {
       const w = window as any;
       if (w.adfit) {
@@ -64,18 +62,15 @@ function AdFitSlot({
       }
     };
 
-    // SDK 로드 완료 여부에 따라 즉시 or 대기
     if ((window as any).adfit || (window as any).kakaoAd) {
       tryInit();
     } else {
-      // SDK가 아직 로드 중이면 스크립트 onload 대기
       const script = document.querySelector(
         'script[src*="ba.min.js"]'
       ) as HTMLScriptElement | null;
       if (script) {
         script.addEventListener('load', tryInit, { once: true });
       } else {
-        // fallback: 500ms 후 재시도
         setTimeout(tryInit, 500);
       }
     }
@@ -233,7 +228,6 @@ async function readHwpxAsText(file: File): Promise<string> {
 function downloadExcel(result: AnalysisResult, fileName: string) {
   const wb = XLSX.utils.book_new();
 
-  // ── Sheet 1: 요약 리포트 ──────────────────────────────────
   const summaryData = [
     ['본 리포트는 Gonggo.link(WJadlink)에서 생성되었습니다'],
     [`원본 파일: ${fileName}`],
@@ -268,20 +262,14 @@ function downloadExcel(result: AnalysisResult, fileName: string) {
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(summaryData);
-
-  // Column widths
   ws['!cols'] = [{ wch: 18 }, { wch: 80 }];
-
-  // Merge title row
   ws['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, // Title row
-    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // File name
-    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } }, // Date
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
   ];
-
   XLSX.utils.book_append_sheet(wb, ws, '공고 요약 리포트');
 
-  // ── Sheet 2: 원본 데이터 (JSON 구조) ─────────────────────
   const fields = Object.entries(result).map(([key, value]) => [key, value]);
   const rawWs = XLSX.utils.aoa_to_sheet([
     ['필드', '내용'],
@@ -292,7 +280,6 @@ function downloadExcel(result: AnalysisResult, fileName: string) {
   rawWs['!cols'] = [{ wch: 16 }, { wch: 100 }];
   XLSX.utils.book_append_sheet(wb, rawWs, '원본 데이터');
 
-  // File name with branding
   const safeFileName = result.공고명?.slice(0, 20).replace(/[\\/:*?"<>|]/g, '') || '공고';
   XLSX.writeFile(wb, `[Gonggo.link]${safeFileName}_요약본.xlsx`);
 }
@@ -322,7 +309,6 @@ export default function GonggoPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeStartTime = useRef<number>(0);
 
-  // Rotate analyzing messages
   useEffect(() => {
     if (appState !== 'analyzing') return;
     const interval = setInterval(() => {
@@ -331,7 +317,6 @@ export default function GonggoPage() {
     return () => clearInterval(interval);
   }, [appState]);
 
-  // Progress bar
   useEffect(() => {
     if (appState !== 'analyzing') { setProgress(0); return; }
     setProgress(0);
@@ -344,7 +329,6 @@ export default function GonggoPage() {
     return () => clearInterval(interval);
   }, [appState]);
 
-  // ── File processor ──────────────────────────────────────
   const processFile = useCallback(async (file: File) => {
     const name = file.name;
     const ext = name.split('.').pop()?.toLowerCase();
@@ -369,7 +353,6 @@ export default function GonggoPage() {
         throw new Error('문서에서 텍스트를 추출할 수 없습니다. 스캔된 이미지 PDF는 지원하지 않습니다.');
       }
 
-      // Start analyzing — enforce minimum 5s for ad exposure
       analyzeStartTime.current = Date.now();
       setAppState('analyzing');
       setMsgIdx(0);
@@ -385,7 +368,6 @@ export default function GonggoPage() {
         throw new Error(data.error || '분석 중 오류가 발생했습니다.');
       }
 
-      // Ensure minimum 5s analyzing state
       const elapsed = Date.now() - analyzeStartTime.current;
       const remaining = Math.max(0, 5000 - elapsed);
       if (remaining > 0) {
@@ -404,7 +386,6 @@ export default function GonggoPage() {
     }
   }, []);
 
-  // ── Drop handlers ────────────────────────────────────────
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -419,7 +400,6 @@ export default function GonggoPage() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) processFile(file);
-      // Reset input so same file can be re-selected
       e.target.value = '';
     },
     [processFile]
@@ -434,9 +414,6 @@ export default function GonggoPage() {
     setMsgIdx(0);
   };
 
-  // ────────────────────────────────────────────────────────
-  // RENDER
-  // ────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-white font-pretendard">
       {/* ── Header ─────────────────────────────────────── */}
@@ -471,15 +448,12 @@ export default function GonggoPage() {
 
         {/* ── Slot A: Top Banner Ad ────────────────────── */}
         <AdFitSlot
-          unit={process.env.NEXT_PUBLIC_ADFIT_SLOT_A ?? 'DAN-SLOT-A'}
+          unit="DAN-AjRMRRihQeIPGGm2"
           width={728}
           height={90}
           label="광고"
         />
 
-        {/* ══════════════════════════════════════════════ */}
-        {/* STATE: IDLE ─ Drop Zone                       */}
-        {/* ══════════════════════════════════════════════ */}
         {appState === 'idle' && (
           <div className="animate-fade-in">
             <div
@@ -501,7 +475,6 @@ export default function GonggoPage() {
                 onChange={handleFileChange}
               />
               <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-                {/* Floating file icon */}
                 <div className="animate-float mb-5">
                   <div className="w-20 h-20 bg-white rounded-2xl shadow-apple-md flex items-center justify-center">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -536,7 +509,6 @@ export default function GonggoPage() {
               </div>
             </div>
 
-            {/* Feature Pills */}
             <div className="mt-5 flex flex-wrap gap-2 justify-center">
               {[
                 { emoji: '⚡', text: '즉시 분석' },
@@ -555,9 +527,6 @@ export default function GonggoPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════ */}
-        {/* STATE: PARSING / PRE-ANALYSIS                 */}
-        {/* ══════════════════════════════════════════════ */}
         {appState === 'parsing' && (
           <div className="animate-fade-in mt-6 rounded-3xl bg-apple-bg p-8 text-center">
             <div className="w-12 h-12 border-3 border-apple-blue border-t-transparent rounded-full animate-spin-slow mx-auto mb-4" />
@@ -566,12 +535,8 @@ export default function GonggoPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════ */}
-        {/* STATE: ANALYZING ─ Skeleton + Ads             */}
-        {/* ══════════════════════════════════════════════ */}
         {appState === 'analyzing' && (
           <div className="animate-fade-in mt-6">
-            {/* Analysis header card */}
             <div className="bg-white rounded-3xl p-6 shadow-apple-md border border-gray-100 mb-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-apple-blue-light rounded-xl flex items-center justify-center flex-shrink-0">
@@ -586,7 +551,6 @@ export default function GonggoPage() {
                 </div>
               </div>
 
-              {/* Progress bar */}
               <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
                 <div
                   className="h-full bg-apple-blue rounded-full transition-all duration-100 ease-out"
@@ -594,22 +558,20 @@ export default function GonggoPage() {
                 />
               </div>
 
-              {/* Rotating message */}
               <LoadingDots />
               <p className="text-sm text-center text-apple-secondary mt-2 min-h-[20px] transition-all">
                 {analyzingMessages[msgIdx]}
               </p>
             </div>
 
-            {/* ── Slot B: Mid-Loading Ad (High Impact) ── */}
+            {/* ── Slot B: Mid-Loading Ad ── */}
             <AdFitSlot
-              unit={process.env.NEXT_PUBLIC_ADFIT_SLOT_B ?? 'DAN-SLOT-B'}
+              unit="DAN-4yLnGP7FwZ1weAX0"
               width={320}
               height={100}
               label="분석 완료 후 결과를 확인하세요"
             />
 
-            {/* Skeleton cards */}
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[...Array(6)].map((_, i) => (
                 <SkeletonCard key={i} />
@@ -618,12 +580,8 @@ export default function GonggoPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════ */}
-        {/* STATE: RESULT ─ AI Summary Dashboard          */}
-        {/* ══════════════════════════════════════════════ */}
         {appState === 'result' && result && (
           <div className="mt-6">
-            {/* Summary Header */}
             <div
               className="animate-slide-up bg-gradient-to-br from-apple-blue to-[#00A3FF] rounded-3xl p-6 text-white mb-5 shadow-blue-glow"
               style={{ animationDelay: '0ms' }}
@@ -645,7 +603,6 @@ export default function GonggoPage() {
               </div>
             </div>
 
-            {/* Key Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
               <InfoCard emoji="🏢" label="주관기관" value={result.주관기관} delay={100} />
               <InfoCard emoji="💰" label="지원금액" value={result.지원금액} highlight delay={150} />
@@ -655,7 +612,6 @@ export default function GonggoPage() {
               <InfoCard emoji="📞" label="문의처" value={result.문의처} delay={350} />
             </div>
 
-            {/* Expandable detail cards */}
             <div className="space-y-3 mb-5">
               <InfoCard emoji="✅" label="지원 자격" value={result.지원자격} delay={400} />
               <InfoCard emoji="🎯" label="사업 목적" value={result.사업목적} delay={450} />
@@ -666,7 +622,6 @@ export default function GonggoPage() {
               )}
             </div>
 
-            {/* ── Action Buttons ─────────────────────── */}
             <div
               className="animate-slide-up bg-white rounded-2xl p-5 shadow-apple-md border border-gray-100 mb-5"
               style={{ animationDelay: '650ms', animationFillMode: 'both' }}
@@ -691,15 +646,14 @@ export default function GonggoPage() {
               </p>
             </div>
 
-            {/* ── Slot C: Bottom Ad ─────────────────── */}
+            {/* ── Slot C: Bottom Ad ── */}
             <AdFitSlot
-              unit={process.env.NEXT_PUBLIC_ADFIT_SLOT_C ?? 'DAN-SLOT-C'}
+              unit="DAN-wXpEnxvLBenaSBFm"
               width={320}
               height={100}
               label="관련 지원사업 정보"
             />
 
-            {/* New analysis button */}
             <div
               className="animate-slide-up text-center mt-5"
               style={{ animationDelay: '700ms', animationFillMode: 'both' }}
@@ -715,9 +669,6 @@ export default function GonggoPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════ */}
-        {/* STATE: ERROR                                   */}
-        {/* ══════════════════════════════════════════════ */}
         {appState === 'error' && (
           <div className="animate-slide-up mt-6 rounded-3xl bg-red-50 border border-red-100 p-8 text-center">
             <div className="text-4xl mb-3">😢</div>
