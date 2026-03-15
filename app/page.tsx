@@ -38,41 +38,58 @@ function AdFitSlot({
   height: number;
   label?: string;
 }) {
-  const adRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (adRef.current && typeof window !== 'undefined') {
-      // Only inject if the INS doesn't already exist
-      if (!adRef.current.querySelector('ins')) {
-        const ins = document.createElement('ins');
-        ins.className = 'kakao_ad_area';
-        ins.style.display = 'none';
-        ins.setAttribute('data-ad-unit', unit);
-        ins.setAttribute('data-ad-width', String(width));
-        ins.setAttribute('data-ad-height', String(height));
-        adRef.current.appendChild(ins);
-        // Trigger AdFit
-        if ((window as any).kakaoAd) {
-          (window as any).kakaoAd.init();
-        }
+    if (!containerRef.current || !unit || unit.startsWith('DAN-SLOT')) return;
+
+    // 기존 ins 제거 후 재생성 (상태 변경 시 중복 방지)
+    containerRef.current.innerHTML = '';
+
+    const ins = document.createElement('ins');
+    ins.className = 'kakao_ad_area';
+    ins.style.display = 'block';
+    ins.setAttribute('data-ad-unit', unit);
+    ins.setAttribute('data-ad-width', String(width));
+    ins.setAttribute('data-ad-height', String(height));
+    containerRef.current.appendChild(ins);
+
+    // SDK가 로드된 후 수동으로 해당 슬롯만 init
+    const tryInit = () => {
+      const w = window as any;
+      if (w.adfit) {
+        w.adfit.load({ el: ins });
+      } else if (w.kakaoAd) {
+        w.kakaoAd.init();
+      }
+    };
+
+    // SDK 로드 완료 여부에 따라 즉시 or 대기
+    if ((window as any).adfit || (window as any).kakaoAd) {
+      tryInit();
+    } else {
+      // SDK가 아직 로드 중이면 스크립트 onload 대기
+      const script = document.querySelector(
+        'script[src*="ba.min.js"]'
+      ) as HTMLScriptElement | null;
+      if (script) {
+        script.addEventListener('load', tryInit, { once: true });
+      } else {
+        // fallback: 500ms 후 재시도
+        setTimeout(tryInit, 500);
       }
     }
   }, [unit, width, height]);
 
   return (
-    <div className="w-full my-2">
+    <div className="w-full my-2 text-center">
       {label && (
         <p className="text-xs text-center text-gray-300 mb-1">{label}</p>
       )}
       <div
-        className="adfit-container mx-auto"
-        style={{ maxWidth: width, minHeight: height }}
-        ref={adRef}
-      >
-        {/* Placeholder visible in dev/ad-blocked environment */}
-        <span className="text-xs text-gray-300 select-none pointer-events-none">
-          광고 영역
-        </span>
-      </div>
+        ref={containerRef}
+        style={{ minHeight: height, display: 'flex', justifyContent: 'center' }}
+      />
     </div>
   );
 }
