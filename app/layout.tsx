@@ -30,9 +30,8 @@ export default function RootLayout({
     <html lang="ko">
       <body className="bg-white text-apple-dark antialiased">
         {children}
-        {/* Kakao AdFit — afterInteractive로 타이밍 보장 */}
         <Script
-          src="//t1.daumcdn.net/kas/static/ba.min.js"
+          src="https://t1.daumcdn.net/kas/static/ba.min.js"
           strategy="afterInteractive"
         />
       </body>
