@@ -43,16 +43,19 @@ function AdFitSlot({
   useEffect(() => {
     if (!containerRef.current || !unit) return;
 
+    // 기존 내용물 청소
     containerRef.current.innerHTML = '';
 
+    // ins 태그 생성
     const ins = document.createElement('ins');
     ins.className = 'kakao_ad_area';
-    ins.style.display = 'block';
+    ins.style.display = 'none'; // SDK가 로드되면 알아서 보여줌
     ins.setAttribute('data-ad-unit', unit);
     ins.setAttribute('data-ad-width', String(width));
     ins.setAttribute('data-ad-height', String(height));
     containerRef.current.appendChild(ins);
 
+    // script 태그 생성
     const script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = '//t1.daumcdn.net/kas/static/ba.min.js';
@@ -67,14 +70,14 @@ function AdFitSlot({
       )}
       <div
         ref={containerRef}
-        style={{ minHeight: height, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        style={{ minHeight: height, display: 'flex', justifyContent: 'center', overflow: 'hidden' }}
       />
     </div>
   );
 }
 
 // ────────────────────────────────────────────────────────────
-// Skeleton Card (기존 UI 유지)
+// UI Components (Skeleton, InfoCard, LoadingDots)
 // ────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
@@ -86,42 +89,23 @@ function SkeletonCard() {
   );
 }
 
-// ────────────────────────────────────────────────────────────
-// Info Card (기존 UI 유지)
-// ────────────────────────────────────────────────────────────
 function InfoCard({
-  emoji,
-  label,
-  value,
-  highlight,
-  delay,
+  emoji, label, value, highlight, delay,
 }: {
-  emoji: string;
-  label: string;
-  value: string;
-  highlight?: boolean;
-  delay?: number;
+  emoji: string; label: string; value: string; highlight?: boolean; delay?: number;
 }) {
   return (
     <div
       className={`info-card animate-slide-up rounded-2xl p-5 border ${
-        highlight
-          ? 'bg-apple-blue-light border-blue-200'
-          : 'bg-white border-gray-100 shadow-apple-sm'
+        highlight ? 'bg-apple-blue-light border-blue-200' : 'bg-white border-gray-100 shadow-apple-sm'
       }`}
       style={{ animationDelay: `${delay ?? 0}ms`, animationFillMode: 'both' }}
     >
       <div className="flex items-start gap-3">
         <span className="text-2xl flex-shrink-0 mt-0.5">{emoji}</span>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-apple-secondary uppercase tracking-wide mb-1">
-            {label}
-          </p>
-          <p
-            className={`text-sm font-medium leading-relaxed break-words ${
-              highlight ? 'text-apple-blue' : 'text-apple-dark'
-            }`}
-          >
+          <p className="text-xs font-semibold text-apple-secondary uppercase tracking-wide mb-1">{label}</p>
+          <p className={`text-sm font-medium leading-relaxed break-words ${highlight ? 'text-apple-blue' : 'text-apple-dark'}`}>
             {value || '정보 없음'}
           </p>
         </div>
@@ -130,9 +114,6 @@ function InfoCard({
   );
 }
 
-// ────────────────────────────────────────────────────────────
-// Loading Dots (기존 UI 유지)
-// ────────────────────────────────────────────────────────────
 function LoadingDots() {
   return (
     <div className="flex gap-1.5 items-center justify-center my-2">
@@ -144,7 +125,7 @@ function LoadingDots() {
 }
 
 // ────────────────────────────────────────────────────────────
-// Helper Functions (추출 및 다운로드 로직 유지)
+// Extractors & Excel Logic
 // ────────────────────────────────────────────────────────────
 async function extractTextFromPDF(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist');
@@ -167,11 +148,13 @@ async function extractTextFromHWP(file: File): Promise<string> {
     const JSZip = (await import('jszip')).default;
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
     const sections: string[] = [];
-    zip.forEach((path) => { if (path.startsWith('Contents/section') && path.endsWith('.xml')) sections.push(path); });
+    zip.forEach((relativePath: string) => {
+      if (relativePath.startsWith('Contents/section') && relativePath.endsWith('.xml')) sections.push(relativePath);
+    });
     let text = '';
     for (const path of sections.sort()) {
-      const xml = await zip.file(path)?.async('text');
-      if (xml) text += xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') + '\n';
+      const xmlContent = await zip.file(path)?.async('text');
+      if (xmlContent) text += xmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') + '\n';
     }
     return text;
   } catch { return '파일 파싱 오류'; }
@@ -190,11 +173,18 @@ function downloadExcel(result: AnalysisResult, fileName: string) {
     ['핵심요약', result.핵심요약]
   ];
   const ws = XLSX.utils.aoa_to_sheet(summaryData);
-  XLSX.utils.book_append_sheet(wb, ws, '공고 요약');
-  XLSX.writeFile(wb, `[Gonggo.link]${result.공고명.slice(0,10)}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, ws, '공고 요약 리포트');
+  const safeFileName = result.공고명?.slice(0, 20).replace(/[\\/:*?"<>|]/g, '') || '공고';
+  XLSX.writeFile(wb, `[Gonggo.link]${safeFileName}_요약본.xlsx`);
 }
 
-const analyzingMessages = ['분석 중입니다...', '정보 추출 중...', '마감일 확인 중...', '거의 다 됐습니다...'];
+const analyzingMessages = [
+  'AI가 문서의 맥락을 분석 중입니다...',
+  '핵심 지원 정보를 추출하고 있습니다...',
+  '공고 일정과 마감일을 확인하고 있습니다...',
+  '지원 자격 조건을 정리하고 있습니다...',
+  '최종 리포트를 생성하고 있습니다...',
+];
 
 // ────────────────────────────────────────────────────────────
 // Main Page Component
@@ -211,16 +201,16 @@ export default function GonggoPage() {
 
   useEffect(() => {
     if (appState !== 'analyzing') return;
-    const interval = setInterval(() => setMsgIdx((i) => (i + 1) % analyzingMessages.length), 1500);
+    const interval = setInterval(() => setMsgIdx((i) => (i + 1) % analyzingMessages.length), 1200);
     return () => clearInterval(interval);
   }, [appState]);
 
   useEffect(() => {
-    if (appState !== 'analyzing') return;
+    if (appState !== 'analyzing') { setProgress(0); return; }
     const start = Date.now();
     const interval = setInterval(() => {
       const elapsed = Date.now() - start;
-      setProgress(Math.min(95, (elapsed / 5000) * 95));
+      setProgress(Math.min(92, (elapsed / 5000) * 92));
     }, 50);
     return () => clearInterval(interval);
   }, [appState]);
@@ -247,45 +237,57 @@ export default function GonggoPage() {
       setResult(data.result);
       setAppState('result');
     } catch {
-      setErrorMsg('분석 중 오류 발생');
+      setErrorMsg('분석 오류 발생');
       setAppState('error');
     }
   }, []);
+
+  const handleReset = () => {
+    setAppState('idle');
+    setResult(null);
+    setFileName('');
+    setErrorMsg('');
+  };
 
   return (
     <main className="min-h-screen bg-white font-pretendard">
       <header className="w-full border-b border-gray-100 bg-white/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-apple-blue rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-apple-blue rounded-lg flex items-center justify-center shadow-blue-glow">
               <span className="text-white text-xs font-black">G</span>
             </div>
-            <span className="text-base font-bold text-apple-dark">Gonggo.link</span>
+            <span className="text-base font-bold text-apple-dark tracking-tight">
+              Gonggo<span className="text-apple-blue">.link</span>
+            </span>
           </div>
+          <span className="text-xs text-apple-secondary bg-apple-bg px-3 py-1 rounded-full border border-gray-100">🔒 서버 미저장</span>
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 pb-16">
         <div className="pt-12 pb-6 text-center">
-          <h1 className="text-3xl font-black text-apple-dark mb-3">
-            공고문 한 장, AI가 핵심만 정리
+          <h1 className="text-3xl sm:text-4xl font-black text-apple-dark tracking-tight leading-tight mb-3">
+            공고문 한 장,<br /><span className="gradient-text">AI가 핵심만 정리</span>해 드립니다
           </h1>
         </div>
 
         {/* ── [광고 1] 상단 가로 배너 ── */}
-        <AdFitSlot unit="DAN-JREtbHULIwEGUmJi" width={728} height={90} label="ADVERTISEMENT" />
+        <AdFitSlot unit="DAN-JREtbHULIwEGUmJi" width={728} height={90} label="AD" />
 
         {appState === 'idle' && (
-          <div
-            className={`mt-6 rounded-3xl border-2 border-dashed p-14 text-center cursor-pointer transition-all
-              ${isDragOver ? 'border-apple-blue bg-apple-blue-light' : 'border-gray-200 bg-apple-bg'}`}
-            onDrop={(e) => { e.preventDefault(); setIsDragOver(false); processFile(e.dataTransfer.files[0]); }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => processFile(e.target.files![0])} />
-            <p className="font-bold text-apple-dark">파일을 드래그하거나 클릭하여 업로드</p>
+          <div className="animate-fade-in">
+            <div
+              className={`mt-6 rounded-3xl border-2 border-dashed transition-all p-14 text-center cursor-pointer ${isDragOver ? 'border-apple-blue bg-apple-blue-light' : 'border-gray-200 bg-apple-bg'}`}
+              onDrop={(e) => { e.preventDefault(); setIsDragOver(false); processFile(e.dataTransfer.files[0]); }}
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => processFile(e.target.files![0])} />
+              <p className="text-lg font-bold text-apple-dark mb-1">파일을 드래그하거나 클릭하세요</p>
+              <p className="text-sm text-apple-secondary">PDF · HWP · HWPX 지원</p>
+            </div>
           </div>
         )}
 
@@ -293,21 +295,26 @@ export default function GonggoPage() {
           <div className="mt-6">
             <div className="bg-white rounded-3xl p-6 shadow-apple-md border border-gray-100 mb-5">
               <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
-                <div className="h-full bg-apple-blue transition-all" style={{ width: `${progress}%` }} />
+                <div className="h-full bg-apple-blue transition-all duration-100" style={{ width: `${progress}%` }} />
               </div>
-              <p className="text-sm text-center text-apple-secondary">{analyzingMessages[msgIdx]}</p>
+              <LoadingDots />
+              <p className="text-sm text-center text-apple-secondary mt-2">{analyzingMessages[msgIdx]}</p>
             </div>
-            
+
             {/* ── [광고 2] 분석 중 배너 ── */}
             <AdFitSlot unit="DAN-AMQ595exIV6B8w0M" width={320} height={100} />
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
           </div>
         )}
 
         {appState === 'result' && result && (
-          <div className="mt-6 animate-fade-in">
-            <div className="bg-apple-blue rounded-3xl p-6 text-white mb-5">
-              <h2 className="text-lg font-black mb-2">{result.공고명}</h2>
-              <p className="text-sm opacity-90">{result.핵심요약}</p>
+          <div className="mt-6">
+            <div className="bg-gradient-to-br from-apple-blue to-[#00A3FF] rounded-3xl p-6 text-white mb-5 shadow-blue-glow">
+              <h2 className="text-lg font-black leading-snug mb-2">{result.공고명}</h2>
+              <p className="text-blue-100 text-sm leading-relaxed">{result.핵심요약}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
@@ -318,30 +325,25 @@ export default function GonggoPage() {
             </div>
 
             <div className="space-y-3 mb-5">
-              <InfoCard emoji="✅" label="지원자격" value={result.지원자격} delay={300} />
-              <InfoCard emoji="📝" label="신청방법" value={result.신청방법} delay={350} />
+              <InfoCard emoji="✅" label="지원 자격" value={result.지원자격} delay={300} />
+              <InfoCard emoji="📝" label="신청 방법" value={result.신청방법} delay={350} />
             </div>
 
-            <button
-              onClick={() => downloadExcel(result, fileName)}
-              className="w-full bg-apple-blue text-white font-bold py-4 rounded-2xl shadow-blue-glow mb-6"
-            >
-              엑셀 파일 다운로드
+            <button onClick={() => downloadExcel(result, fileName)} className="w-full bg-apple-blue text-white font-bold py-4 rounded-2xl shadow-blue-glow mb-6">
+              엑셀 파일로 다운로드
             </button>
 
             {/* ── [광고 3] 결과 하단 사각형 배너 ── */}
-            <AdFitSlot unit="DAN-LxOuhWq2WMb3o4n7" width={300} height={250} label="Recommended for You" />
-            
+            <AdFitSlot unit="DAN-LxOuhWq2WMb3o4n7" width={300} height={250} label="관련 정보" />
+
             <div className="text-center mt-5">
-              <button onClick={() => setAppState('idle')} className="text-sm text-apple-secondary border px-5 py-2 rounded-full">
-                ↩ 새 파일 분석하기
-              </button>
+              <button onClick={handleReset} className="text-sm font-semibold text-apple-secondary border px-5 py-2.5 rounded-full">↩ 새 파일 분석하기</button>
             </div>
           </div>
         )}
       </div>
 
-      <footer className="py-8 text-center border-t border-gray-100">
+      <footer className="border-t border-gray-100 py-8 text-center">
         <p className="text-xs text-gray-400">© 2026 Gonggo.link by WJadlink</p>
       </footer>
     </main>
