@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,16 +28,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <head>
-        {/* Kakao AdFit Script */}
-        <script
-          async
-          type="text/javascript"
-          src="//t1.daumcdn.net/kas/static/ba.min.js"
-        />
-      </head>
       <body className="bg-white text-apple-dark antialiased">
         {children}
+        {/* Kakao AdFit — afterInteractive로 타이밍 보장 */}
+        <Script
+          src="//t1.daumcdn.net/kas/static/ba.min.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
