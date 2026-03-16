@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -44,34 +43,41 @@ function AdFitSlot({
 
   useEffect(() => {
     if (!unit || !insRef.current || loaded.current) return;
-    loaded.current = true;
 
     const ins = insRef.current;
 
     const tryLoad = () => {
       const w = window as any;
-      if (w.adfit) {
+      if (w.adfit && !loaded.current) {
+        loaded.current = true;
         w.adfit.load({ el: ins });
+        return true;
       }
+      return false;
     };
 
-    // 이미 스크립트 로드 완료된 경우
-    if ((window as any).adfit) {
-      tryLoad();
-      return;
-    }
+    // 즉시 시도
+    if (tryLoad()) return;
 
-    // 아직 로드 중이면 최대 3초간 폴링
+    // 폴링: 100ms 간격, 최대 10초
     let attempts = 0;
     const poll = setInterval(() => {
       attempts++;
-      if ((window as any).adfit) {
-        clearInterval(poll);
-        tryLoad();
-      } else if (attempts >= 30) {
+      if (tryLoad() || attempts >= 100) {
         clearInterval(poll);
       }
     }, 100);
+
+    // 스크립트 load 이벤트도 감지
+    const script = document.querySelector(
+      'script[src*="t1.daumcdn.net"]'
+    ) as HTMLScriptElement | null;
+    if (script) {
+      script.addEventListener('load', () => {
+        clearInterval(poll);
+        tryLoad();
+      }, { once: true });
+    }
 
     return () => clearInterval(poll);
   }, [unit]);
